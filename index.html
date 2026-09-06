@@ -1,38 +1,3 @@
-form.php ko index.html ke andar daalne se kaam nahi hoga. GitHub Pages PHP execute nahi karta—GitHub sirf HTML/CSS/JavaScript chalata hai. File ko index.php rename karne par bhi GitHub par email send nahi hogi.
-
-Do workable options hain:
-
-GitHub Pages: Third-party form service/API use karni padegi.
-Hostinger (recommended): Main website ko single index.php file bana dunga—HTML, CSS, JavaScript aur PHP email sending sab usi file mein. User Submit karega aur answers directly email par jayenge.
-
-Agar Hostinger par upload kar sakte ho, bas “Hostinger index.php” likh do. Main final single-file code bana dunga.
-
-do emails to proper agyi hai
-isko kya dikt hogi chahe 1-2 mint late aje
-
-Haan, phir koi dikkat nahi hai. Dono emails properly aa gayi hain to current system working hai.
-
-Pehli email activation ki thi.
-Doosri email submitted answers ki thi.
-Ab same GitHub live URL se future submissions ke liye activation repeat nahi honi chahiye.
-Answers 1–2 minute late aana normal hai.
-form.php ya Hostinger ki need nahi hai.
-
-Current final index.html hi use karo.
-
-bhai 2 email to agi jo code tune ab diya h usme nahi aayi email
-
-Haan bhai, issue updated code ke submission format mein tha. Ab fix kar diya:
-
-FormSubmit-compatible submission format
-Email request background mein cancel nahi hogi
-“Answers sent with love!” server ki actual confirmation ke baad hi dikhega
-Error hua to success ke badle retry screen aayegi
-
-Download corrected final index.html
-
-GitHub par purani file replace karo. Update live hone ke baad hard refresh karna. Testing mein Answers sent with love! aane tak page close mat karna; uske baad email 1–2 minute late aaye to normal hai.
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -539,7 +504,7 @@ GitHub par purani file replace karo. Update live hone ke baad hard refresh karna
         return true;
       }
 
-      async function submitAnswers() {
+      function submitAnswers() {
         if (submitting) return;
         submitting = true;
         showScreen(sendingScreen);
@@ -547,30 +512,28 @@ GitHub par purani file replace karo. Update live hone ke baad hard refresh karna
         const payload = {
           _subject: 'Romantic Quiz - New Answers ❤️',
           _template: 'table',
-          _captcha: 'false'
+          _captcha: 'false',
+          _next: `${location.origin}${location.pathname}?sent=1`
         };
         questions.forEach((item, index) => {
           payload[`${index + 1}. ${item.question}`] = answers[index];
         });
 
-        try {
-          const sendRequest = fetch(`https://formsubmit.co/ajax/${receiverEmail}`, {
-            method: 'POST',
-            headers: { 'Accept': 'application/json' },
-            body: new URLSearchParams(payload),
-            keepalive: true
-          });
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `https://formsubmit.co/${receiverEmail}`;
+        form.style.display = 'none';
 
-          const response = await sendRequest;
-          const result = await response.json().catch(() => ({}));
-          if (!response.ok || result.success === 'false' || result.success === false) throw new Error('Submission failed');
-          showScreen(successScreen);
-          burstHearts();
-        } catch (error) {
-          showScreen(errorScreen);
-        } finally {
-          submitting = false;
-        }
+        Object.entries(payload).forEach(([name, value]) => {
+          const input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = name;
+          input.value = value;
+          form.appendChild(input);
+        });
+
+        document.body.appendChild(form);
+        setTimeout(() => form.submit(), 120);
       }
 
       function burstHearts() {
@@ -616,7 +579,10 @@ GitHub par purani file replace karo. Update live hone ke baad hard refresh karna
         }
       });
 
-      $('retryBtn').addEventListener('click', submitAnswers);
+      $('retryBtn').addEventListener('click', () => {
+        showScreen(quizScreen);
+        submitting = false;
+      });
 
       if (window.matchMedia('(pointer:fine)').matches) {
         questionCard.addEventListener('mousemove', event => {
@@ -629,9 +595,13 @@ GitHub par purani file replace karo. Update live hone ke baad hard refresh karna
       }
 
       makeHearts();
+
+      if (new URLSearchParams(location.search).get('sent') === '1') {
+        showScreen(successScreen);
+        burstHearts();
+        history.replaceState({}, '', location.pathname);
+      }
     })();
   </script>
 </body>
 </html>
-index.html
-HTML
